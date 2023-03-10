@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Калькулятор размера выборок для A/B теста by Александра Никулина</title>
+  <style>
+    /* Add some basic styling for the entire page */
+    body {
+        font-family: Arial, sans-serif;
+		background-color: #f5f5f5;
+		padding: 20px;
+		box-sizing: border-box;
+    }
+    /* Style the form elements */
+    form {
+        background-color: #fff;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		padding: 20px;
+		max-width: 700px;
+		margin: 0 auto;
+		text-align: left;
+    }
+    form label {
+        margin-top: 0;
+		font-weight: bold;
+		font-size: 16px;
+		color: #333;
+    }
+    form input[type="text"] {
+        display: block;
+		width: 100%;
+		height: 40px;
+		margin-bottom: 20px;
+		padding: 0 10px;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		font-size: 16px;
+		color: #333;
+		box-sizing: border-box;
+    }
+    /* Style the submit button */
+    input[type="submit"] {
+        width: 180px;
+		height: 50px;
+		padding: 10px;
+		background-color: #0099ff;
+		border: none;
+		border-radius: 5px;
+		font-size: 16px;
+		font-weight: bold;
+		color: #fff;
+		cursor: pointer;
+		margin-top: -30px;
+    }
+ </style>
+      <link rel="stylesheet" href="https://pyscript.net/latest/pyscript.css" />
+      <script defer src="https://pyscript.net/latest/pyscript.js"></script>
+</head>
+<body>
+  <form onsubmit="return false;">
+    <h2>Калькулятор A/B тестов от Александры Никулиной</h2>
+    <p> Этот калькулятор позволяет определить оптимальный размер выборки для проведения A/B тестов для Ratio метрик, учитывая различные соотношения групп и двустороннюю проверку гипотезы. Кроме того, минимальный детектируемый эффект определяется в абсолютных значениях, что дает возможность точно измерить разницу между двумя группами тестирования без потери точности.</p>
+    <p><i>*Целую часть десятичной дроби отделяйте точкой, а не запятой</i></p>
+    <label for="baseline">Базовый коэффициент метрики</label>
+    <input type="text" id="baseline" name="baseline" class="py-input" value="0.2"><br>
+
+    <label for="mde">Минимальный детектируемый абсолютный эффект</label>
+    <input type="text" id="mde" name="mde" class="py-input" value="0.05"><br>
+
+    <label for="ratio">Соотношение экспериментальной и контрольной группы</label>
+    <input type="text" id="ratio" name="ratio" class="py-input" value="1"><br>
+
+    <label for="power">Статистическая мощность (1−β)</label>
+    <input type="text" id="power" name="power" class="py-input" value="0.8"><br>
+
+    <label for="level">Уровень значимости (α)</label>
+    <input type="text" id="level" name="level" class="py-input" value="0.05"><br>
+
+    <input type="submit" value="Посчитать выборки" id="btn-load" class="py-button" py-click="get_data()">
+    <h3>Результаты</h3>
+    <p>Размер контрольной группы (A):<span id="control-group"></span></p>
+    <p>Размер экспериментальной группы (B):<span id="test-group"></span></p>
+  </form>
+  <py-config>
+    packages = ["numpy","statsmodels"]
+  </py-config>
+<py-script>
+
+    def get_data():
+
+        import numpy as np
+        from statsmodels.stats.power import NormalIndPower
+        import statsmodels.api as sm
+
+        baseline = float(Element("baseline").element.value)
+        mde = float(Element("mde").element.value)
+        ratio = float(Element("ratio").element.value)
+        power = float(Element("power").element.value)
+        alpha = float(Element("level").element.value)
+
+        # print(baseline,mde,ratio,power,alpha)
+
+        # Создаем объект анализа мощности
+        analysis = NormalIndPower()
+
+        effect_size = sm.stats.proportion_effectsize(baseline, baseline + mde)
+
+        # Считаем размер выборок
+        result = analysis.solve_power(effect_size=effect_size, power=power, alpha=alpha, ratio=ratio)
+        sample_size = int(np.ceil(result))
+
+        Element('control-group').write(round(sample_size))
+        Element('test-group').write(round(sample_size*ratio))
+        
+
+</py-script>
+  
+</body>
+</html>
